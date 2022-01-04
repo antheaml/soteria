@@ -1,9 +1,9 @@
 #include <xc.inc>
 
-global	setup_lcd, start_fall_lcd, start_alertButton_lcd, start_disable_lcd
+global	setup_lcd, start_fall_lcd, start_alertButton_lcd
+global	start_disable_lcd, LCD_Setup, LCD_Write_Message
 
 extrn	UART_Setup, UART_Transmit_Message  
-extrn	LCD_Setup, LCD_Write_Message
 extrn   nurse_ledSetup, nurse_fall, nurse_alert, nurse_remote_disable
 
 
@@ -61,17 +61,51 @@ rst: 	org 0x0
 	goto	setup_lcd
 
 setup_lcd:
-	; *************************************
-	; ----- Programme FLASH read Setup Code
-	; *************************************
+	; ***********************************************************************
+	; ----- Subroutine to set up LCD and display the disabled/standby message
+	; ***********************************************************************
 	bcf	CFGS	; point to Flash program memory  
 	bsf	EEPGD 	; access Flash program memory
 	call	UART_Setup	; setup UART
 	call	LCD_Setup	; setup UART
 	call	LCD_clear
-	call	start_disable_lcd
+	call	start_disable_lcd ; display the disabled/standby message
 	return
-	;goto	start
+	
+LCD_Setup:
+	; ******************************************************************************
+	; ----- Subroutine to send bytes required to set up LCD before sending a message
+	; ******************************************************************************
+	clrf    LATB, A								
+	movlw   11000000B	; RB0:5 all outputs
+	movwf	TRISB, A 								
+	movlw   40
+	call	LCD_delay_ms	; wait 40ms for LCD to start up properly
+	movlw	00110000B	; Function set 4-bit
+	call	LCD_Send_Byte_I
+	movlw	10		; wait 40us
+	call	LCD_delay_x4us
+	movlw	00101000B	; 2 line display 5x8 dot characters
+	call	LCD_Send_Byte_I
+	movlw	10		; wait 40us
+	call	LCD_delay_x4us
+	movlw	00101000B	; repeat, 2 line display 5x8 dot characters
+	call	LCD_Send_Byte_I
+	movlw	10		; wait 40us
+	call	LCD_delay_x4us
+	movlw	00001111B	; display on, cursor on, blinking on
+	call	LCD_Send_Byte_I
+	movlw	10		; wait 40us
+	call	LCD_delay_x4us
+	movlw	00000001B	; display clear
+	call	LCD_Send_Byte_I
+	movlw	2		; wait 2ms
+	call	LCD_delay_ms
+	movlw	00000110B	; entry mode incr by 1 no shift
+	call	LCD_Send_Byte_I
+	movlw	10		; wait 40us
+	call	LCD_delay_x4us
+	return	
 	
 	; ******* Main programme ****************************************
 	
@@ -195,6 +229,18 @@ loop_alertButton_lcd:
 	call	LCD_Write_Message
 
 	return			; goto current line in code
+	
+LCD_Write_Message:	    
+	; *******************************************************************************
+	; ----- Subroutine to transmit message stored stored at FSR2, length stored in W
+	; *******************************************************************************
+	movwf   LCD_counter, A
+LCD_Loop_message:
+	movf    POSTINC2, W, A
+	call    LCD_Send_Byte_D
+	decfsz  LCD_counter, A
+	bra	LCD_Loop_message
+	return
 
 LCD_Send_Byte_I:
 	; ****************************************************************
@@ -255,8 +301,6 @@ LCD_Enable:
 	nop
 	bcf	LATB, LCD_E, A	    ; Writes data to LCD
 	return
-
-
 
 ; ***************************
 ; ----- LCD delay subroutines
