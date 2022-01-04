@@ -13,9 +13,9 @@ rst:	org	0x0000	; reset vector
 	goto	nurse_setup
 	
 nurse_setup:
-    ; ********************************************************
-    ; Subroutine which sets up the nurse device upon start-up
-    ; ********************************************************
+    ; **************************************************************
+    ; ----- Subroutine which sets up the nurse device upon start-up
+    ; **************************************************************
     bcf	    CFGS		    ; point to Flash program memory  
     bsf	    EEPGD		    ; access Flash program memory
     call    nurse_ledSetup	    ; set up LEDs
@@ -28,16 +28,16 @@ nurse_setup:
 
     
 polling_main: 
-    ; ********************************************************************************************
-    ; Looping subroutine which tests the logic level of RD0:2 to determine if a fall has occured,
-    ; or the alert or disable buttons are pressed on the client device
-    ; Logic:
-    ; 		Fall occurs -> PORTD0 high -> call fall subroutine 
-    ; 		Alert button pressed -> PORTD1 high -> call alert subroutine 
-    ; 		Disable button pressed -> PORTD2 high -> call disable subroutine triggered
-    ; BTFSC = bit test f, skip if clear
-    ; Note: polling used instead of interrupt as interrupt bins (RB0:3) used by LCD screen 
-    ; ********************************************************************************************
+    ; *************************************************************************************************
+    ; ----- Looping subroutine which tests the logic level of RD0:2 to determine if a fall has occured,
+    ; ----- or the alert or disable buttons are pressed on the client device
+    ; ----- Logic:
+    ; -----		Fall occurs -> PORTD0 high -> call fall subroutine 
+    ; -----		Alert button pressed -> PORTD1 high -> call alert subroutine 
+    ; ----- 		Disable button pressed -> PORTD2 high -> call disable subroutine triggered
+    ; ----- BTFSC = bit test f, skip if clear
+    ; ----- Note: polling used instead of interrupt as interrupt bins (RB0:3) used by LCD screen 
+    ; *************************************************************************************************
     BTFSC   PORTD, 1, A 
     call    nurse_alert
     BTFSC   PORTD, 0, A 
